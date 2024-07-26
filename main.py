@@ -19,49 +19,62 @@ TARGET_CISHU = 5
 MAX_SPEED = 30
 SHANBI_TIME = 2
 
+
 def mirror_atoms(atoms: list[api.Atom]):
     rtn = atoms.copy()
-    height = api.get_context().get_env_height() #地图高度
-    width = api.get_context().get_env_width() #地图宽度
-    for i in atoms:# 四个墙壁都mirror
-        rtn.append(AtomTuple(-i.x, i.y, -i.vx, i.vy, i.radius, api.relative_radian(0, 0, -i.vx, i.vy), i.mass, i.type, i.id))
-        rtn.append(AtomTuple(i.x, -i.y, i.vx, -i.vy, i.radius, api.relative_radian(0, 0, i.vx, -i.vy), i.mass, i.type, i.id))
-        rtn.append(AtomTuple(2*width - i.x, i.y, -i.vx, i.vy, i.radius, api.relative_radian(0, 0, -i.vx, i.vy), i.mass, i.type, i.id))
-        rtn.append(AtomTuple(i.x, 2*height - i.y, i.vx, -i.vy, i.radius, api.relative_radian(0, 0, i.vx, -i.vy), i.mass, i.type, i.id))
+    height = api.get_context().get_env_height()  # 地图高度
+    width = api.get_context().get_env_width()  # 地图宽度
+    for i in atoms:  # 四个墙壁都mirror
+        rtn.append(
+            AtomTuple(-i.x, i.y, -i.vx, i.vy, i.radius, api.relative_radian(0, 0, -i.vx, i.vy), i.mass, i.type, i.id))
+        rtn.append(
+            AtomTuple(i.x, -i.y, i.vx, -i.vy, i.radius, api.relative_radian(0, 0, i.vx, -i.vy), i.mass, i.type, i.id))
+        rtn.append(
+            AtomTuple(2 * width - i.x, i.y, -i.vx, i.vy, i.radius, api.relative_radian(0, 0, -i.vx, i.vy), i.mass,
+                      i.type, i.id))
+        rtn.append(
+            AtomTuple(i.x, 2 * height - i.y, i.vx, -i.vy, i.radius, api.relative_radian(0, 0, i.vx, -i.vy), i.mass,
+                      i.type, i.id))
     return rtn
+
 
 def distance_to(me, i):
     return sqrt((me.x - i.x) ** 2 + (me.y - i.y) ** 2)
 
+
 def qw_c(mass, t):
     return mass * 10 / t
 
-def speeds(me: api.Atom, atom: api.Atom) -> tuple[float, float, float, float]: # lianxian speed, chuizhi speed, lianxian radian, chuizhi radian
+
+def speeds(me: api.Atom, atom: api.Atom) -> tuple[
+    float, float, float, float]:  # lianxian speed, chuizhi speed, lianxian radian, chuizhi radian
     d = api.distance(me.x, me.y, atom.x, atom.y)
-    u_xiangdui = ((atom.x - me.x) / d, (atom.y - me.y) / d) # 连线方向上的单位向量
-    v_xiangdui = (me.vx - atom.vx, me.vy - atom.vy) # 相对速度
+    u_xiangdui = ((atom.x - me.x) / d, (atom.y - me.y) / d)  # 连线方向上的单位向量
+    v_xiangdui = (me.vx - atom.vx, me.vy - atom.vy)  # 相对速度
     # 沿连线方向上的速度
     v_lianxian = v_xiangdui[0] * u_xiangdui[0] + v_xiangdui[1] * u_xiangdui[1]
     # 垂直连线方向上的速度
     u_chuizhi = (-u_xiangdui[1], u_xiangdui[0])
-    v_chuizhi =  v_xiangdui[0] * u_chuizhi[0] + v_xiangdui[1] * u_chuizhi[1]
+    v_chuizhi = v_xiangdui[0] * u_chuizhi[0] + v_xiangdui[1] * u_chuizhi[1]
     return v_lianxian, v_chuizhi, api.relative_angle(0, 0, *u_xiangdui), api.relative_angle(0, 0, *u_chuizhi)
+
 
 def Angle(me: api.Atom, atom: api.Atom, cishu) -> list[float]:
     rtn = []
     d = api.distance(me.x, me.y, atom.x, atom.y)
-    u_xiangdui = ((atom.x - me.x) / d, (atom.y - me.y) / d) # 连线方向上的单位向量
-    v_xiangdui = (me.vx - atom.vx, me.vy - atom.vy) # 相对速度
+    u_xiangdui = ((atom.x - me.x) / d, (atom.y - me.y) / d)  # 连线方向上的单位向量
+    v_xiangdui = (me.vx - atom.vx, me.vy - atom.vy)  # 相对速度
     # 沿连线方向上的速度
-    v_lianxian, v_chuizhi , ang_lianxian, ang_chuizhi = speeds(me, atom)
+    v_lianxian, v_chuizhi, ang_lianxian, ang_chuizhi = speeds(me, atom)
     # print(f"angle_xiangdui = {round(api.relative_angle(0, 0, *u_xiangdui),3)}, angle_v_xiangdui = {round(api.relative_angle(0, 0,* v_xiangdui),3)}")
     # print(f"v_lianxian = {v_lianxian}, v_chuizhi = {v_chuizhi}")
     ang_pen_lian = api.angle_to_radian(ang_lianxian + 180)
     ang_pen_chui = api.angle_to_radian(ang_chuizhi)
     if abs(v_chuizhi) > 0.1 and cishu > 0:
         if abs(v_chuizhi) < 10.2:
-            v_shuiping = sqrt(10.2**2 - v_chuizhi**2)
-            pen_x, pen_y = v_chuizhi * cos(ang_pen_chui) + v_shuiping * cos(ang_pen_lian), v_chuizhi * sin(ang_pen_chui) + v_shuiping * sin(ang_pen_lian)
+            v_shuiping = sqrt(10.2 ** 2 - v_chuizhi ** 2)
+            pen_x, pen_y = v_chuizhi * cos(ang_pen_chui) + v_shuiping * cos(ang_pen_lian), v_chuizhi * sin(
+                ang_pen_chui) + v_shuiping * sin(ang_pen_lian)
             rtn.append(api.relative_radian(0, 0, pen_x, pen_y))
         else:
             if v_chuizhi < 0:
@@ -74,8 +87,9 @@ def Angle(me: api.Atom, atom: api.Atom, cishu) -> list[float]:
                 rtn = [ang_pen_chui] * cishu_chuizhi
             v_chuizhi -= cishu_chuizhi * 10.2
             if abs(v_chuizhi) > 0.1 and cishu_chuizhi < cishu:
-                v_shuiping = sqrt(10.2**2 - v_chuizhi**2)
-                pen_x, pen_y = v_chuizhi * cos(ang_pen_chui) + v_shuiping * cos(ang_pen_lian), v_chuizhi * sin(ang_pen_chui) + v_shuiping * sin(ang_pen_lian)
+                v_shuiping = sqrt(10.2 ** 2 - v_chuizhi ** 2)
+                pen_x, pen_y = v_chuizhi * cos(ang_pen_chui) + v_shuiping * cos(ang_pen_lian), v_chuizhi * sin(
+                    ang_pen_chui) + v_shuiping * sin(ang_pen_lian)
                 rtn.append(api.relative_radian(0, 0, pen_x, pen_y))
     if len(rtn) < cishu:
         rtn += [ang_pen_lian] * (cishu - len(rtn))
@@ -83,7 +97,7 @@ def Angle(me: api.Atom, atom: api.Atom, cishu) -> list[float]:
     return rtn
 
 
-def shanbiAngle(me: api.Atom, atom: api.Atom) -> list[float]:
+def shanbiAngle(me: api.Atom, other: api.Atom) -> list[float]:
     rtn = []
     dx = other.x - me.x
     dy = other.y - me.y
@@ -106,7 +120,7 @@ def shanbiAngle(me: api.Atom, atom: api.Atom) -> list[float]:
     thrust_direction_rad = math.atan2(vy_to_cancel, vx_to_cancel)
     if len(rtn) < SHANBI_CISHU:
         rtn += [thrust_direction_rad] * (SHANBI_CISHU - len(rtn))
-    print(f"angle rtn={[round(api.r2a(i),3) for i in rtn]}")
+    print(f"angle rtn={[round(api.r2a(i), 3) for i in rtn]}")
     return rtn
 
 
@@ -151,11 +165,11 @@ def cal_t(me: api.Atom, atom: api.Atom, vx, vy):
     dy = atom.y - me.y
     r_sum = me.radius + atom.radius
 
-    a = vx**2 + vy**2
+    a = vx ** 2 + vy ** 2
     b = 2 * (dx * vx + dy * vy)
-    c = dx**2 + dy**2 - r_sum**2
+    c = dx ** 2 + dy ** 2 - r_sum ** 2
 
-    discriminant = b**2 - 4 * a * c
+    discriminant = b ** 2 - 4 * a * c
 
     if discriminant < 0:
         return 999  # 无碰撞
@@ -169,8 +183,31 @@ def cal_t(me: api.Atom, atom: api.Atom, vx, vy):
         t = max(t1, t2)
     if t < 0:
         return 999  # 所有解为负，无碰撞
-    
+
     return t
+
+
+def whether_collide(self, other):
+    # 1. 计算两个物体之间的位置差
+    dx = other.x - self.x
+    dy = other.y - self.y
+
+    # 2. 计算连线方向（弧度）
+    line_direction_rad = math.atan2(dy, dx)
+
+    # 3. 计算相对速度
+    vx_relative = self.vx - other.vx
+    vy_relative = self.vy - other.vy
+
+    # 4. 计算连线方向上的速度分量
+    v_along_line = vx_relative * math.cos(line_direction_rad) + vy_relative * math.sin(line_direction_rad)
+
+    # 5. 如果连线速度为负（即两物体正在接近），且距离小于两者半径之和，则认为会碰撞
+    distance = math.sqrt(dx ** 2 + dy ** 2)
+    if v_along_line < 0 and distance <= (self.radius + other.radius):
+        return True
+
+    return False
 
 
 def handle_shanbi(context: api.RawContext):
@@ -184,7 +221,7 @@ def handle_shanbi(context: api.RawContext):
     print(f"me: {print_atom(context.me)}")
     angs = []
     for e in enemies:
-        if e.whether_collide(me):
+        if whether_collide(e, me):
             print(f"shanbi {print_atom(e)} will collide")
             t = cal_t(me, e, 0, 0)
             if t > SHANBI_TIME:
@@ -195,10 +232,10 @@ def handle_shanbi(context: api.RawContext):
                 continue
             angs.append(shanbiAngle(me, e))
     print(f"angs: {angs}")
-    
+
     if angs:
         ang = hebing(angs)
-        print(f"final angle: {[round(api.r2a(i),3) for i in ang]}")
+        print(f"final angle: {[round(api.r2a(i), 3) for i in ang]}")
         while not q.empty():
             q.get()
         for i in ang:
@@ -224,9 +261,9 @@ def have_bigger_atom(context, me: api.Atom, i: api.Atom, cishu):
         if i.mass >= (me.mass * (1 - api.SHOOT_AREA_RATIO) ** cishu)
     ]
     if (
-        len(api.raycast(enemies, p_l, radian, distance_to(me, i)))
-        + len(api.raycast(enemies, p_r, radian, distance_to(me, i)))
-        > 0
+            len(api.raycast(enemies, p_l, radian, distance_to(me, i)))
+            + len(api.raycast(enemies, p_r, radian, distance_to(me, i)))
+            > 0
     ):
         # print(f"have_bigger_atom {print_atom(i)}, continue")
         return True
@@ -256,7 +293,7 @@ def handle_target(context: api.RawContext):
     # 2. 查看不改变方向，喷射的收益
     if biggest_atom:
         m_cishu = int(math.log(biggest_atom.mass / context.me.mass) / math.log
-            (1 - api.SHOOT_AREA_RATIO))
+        (1 - api.SHOOT_AREA_RATIO))
         x, y = 0, 0
         for i in range(m_cishu):
             me_jiaodu = api.relative_radian(0, 0, context.me.vx, context.me.vy)
@@ -264,22 +301,23 @@ def handle_target(context: api.RawContext):
             x += xx
             y += yy
             t = cal_t(context.me, biggest_atom, x, y)
-            qw = qw_c(context.me.mass + biggest_atom.mass - context.me.mass * (api.SHOOT_AREA_RATIO ** m_cishu) , t)
+            qw = qw_c(context.me.mass + biggest_atom.mass - context.me.mass * (api.SHOOT_AREA_RATIO ** m_cishu), t)
             if biggest_atom.type == "npc" or biggest_atom.type == "player":
                 qw *= 0.8
-            if qw > max_qw *1.02 and t >= 0.01:
+            if qw > max_qw * 1.02 and t >= 0.01:
                 max_qw = qw
                 max_atom = biggest_atom
-                max_cishu = i+1
+                max_cishu = i + 1
     # 3. 查看改变方向的收益
     enemies = [
-        i for i in context.enemies if i.mass <= context.me.mass * (1 - api.SHOOT_AREA_RATIO) and i.mass >= context.me.mass * api.SHOOT_AREA_RATIO and not i.is_bullet
+        i for i in context.enemies if i.mass <= context.me.mass * (
+                    1 - api.SHOOT_AREA_RATIO) and i.mass >= context.me.mass * api.SHOOT_AREA_RATIO and not i.is_bullet
     ]
     enemies = mirror_atoms(enemies)
     enemies.sort(key=lambda x: distance_to(context.me, x))
     # print(f"enemies: {[print_atom(i) for i in enemies]}")
     for enemy in enemies:
-        
+
         cishu = int(math.log(enemy.mass / context.me.mass) / math.log(1 - api.SHOOT_AREA_RATIO))
         if cishu > TARGET_CISHU:
             cishu = TARGET_CISHU
@@ -287,7 +325,7 @@ def handle_target(context: api.RawContext):
         if have_bigger_atom(context, context.me, enemy, cishu):
             print(f"have_bigger_atom {print_atom(enemy)}, continue")
             continue
-        
+
         angles = Angle(context.me, enemy, cishu)
         x, y = 0, 0
         for i in range(len(angles)):
@@ -295,13 +333,13 @@ def handle_target(context: api.RawContext):
             x += xx
             y += yy
             t = cal_t(context.me, enemy, x, y)
-            qw = qw_c(context.me.mass + enemy.mass - context.me.mass * (api.SHOOT_AREA_RATIO ** cishu) , t)
+            qw = qw_c(context.me.mass + enemy.mass - context.me.mass * (api.SHOOT_AREA_RATIO ** cishu), t)
             if enemy.type == "npc" or enemy.type == "player":
                 qw *= 0.8
-            if qw > max_qw *1.02 and t >= 0.01:
+            if qw > max_qw * 1.02 and t >= 0.01:
                 max_qw = qw
                 max_atom = enemy
-                max_cishu = i+1
+                max_cishu = i + 1
     if max_atom:
         print(f"final atom: {print_atom(max_atom)}")
         jd = Angle(context.me, max_atom, max_cishu)
@@ -309,6 +347,7 @@ def handle_target(context: api.RawContext):
             q.put(data(False, i))
     print(f"handle_target time: {time.time() - start_time}")
     print("******target******")
+
 
 def handler(context: api.RawContext):
     # print(f"me: {print_atom(context.me)}")
