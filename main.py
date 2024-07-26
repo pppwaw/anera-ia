@@ -85,35 +85,27 @@ def Angle(me: api.Atom, atom: api.Atom, cishu) -> list[float]:
 
 def shanbiAngle(me: api.Atom, atom: api.Atom) -> list[float]:
     rtn = []
-    d = api.distance(me.x, me.y, atom.x, atom.y)
-    u_xiangdui = ((atom.x - me.x) / d, (atom.y - me.y) / d) # 连线方向上的单位向量
-    v_xiangdui = (me.vx - atom.vx, me.vy - atom.vy) # 相对速度
-    # 沿连线方向上的速度
-    v_lianxian = v_xiangdui[0] * u_xiangdui[0] + v_xiangdui[1] * u_xiangdui[1]
-    # 垂直连线方向上的速度
-    u_chuizhi = (-u_xiangdui[1], u_xiangdui[0])
-    v_chuizhi =  v_xiangdui[0] * u_chuizhi[0] + v_xiangdui[1] * u_chuizhi[1]
-    # 垂直连线方向的速度
-    print(f"angle_xiangdui = {api.relative_angle(0, 0, *u_xiangdui)}, angle_v_xiangdui = {api.relative_angle(0, 0,* v_xiangdui)}")
-    print(f"v_lianxian={v_lianxian}, v_chuizhi={v_chuizhi}")
-    ang_pen_chui =  api.angle_to_radian(api.relative_angle(0, 0, *u_chuizhi) + 180)
-    ang_pen_lian = api.angle_to_radian(api.relative_angle(0, 0, *u_xiangdui))
-    # if v_lianxian > 0.1:
-    #     me_v = api.distance(0,0,me.vx,me.vy)
-    #     if abs(v_lianxian) < 10.2:
-    #         v_shuiping = sqrt(10.2**2 - v_lianxian**2)
-    #         pen_x, pen_y = v_lianxian * cos(ang_pen_lian) + v_shuiping * cos(ang_pen_chui), v_lianxian * sin(ang_pen_lian) + v_shuiping * sin(ang_pen_chui)
-    #         rtn.append(api.relative_radian(0, 0, pen_x, pen_y))
-    #     else:
-    #         cishu_lianxian = cal_cishu(v_lianxian, me_v, SHANBI_CISHU-1)
-    #         rtn = [ang_pen_lian] * cishu_lianxian
-    #         v_lianxian -= cishu_lianxian * 10.2
-    #         if v_lianxian> 0.1 and v_lianxian < 10.2:
-    #             v_shuiping = sqrt(10.2**2 - v_lianxian**2)
-    #             pen_x, pen_y = v_lianxian * cos(ang_pen_lian) + v_shuiping * cos(ang_pen_chui), v_lianxian * sin(ang_pen_lian) + v_shuiping * sin(ang_pen_chui)
-    #             rtn.append(api.relative_radian(0, 0, pen_x, pen_y))
+    dx = other.x - me.x
+    dy = other.y - me.y
+
+    # 2. 计算连线方向（弧度）
+    line_direction_rad = math.atan2(dy, dx)
+
+    # 3. 计算相对速度
+    vx_relative = me.vx - other.vx
+    vy_relative = me.vy - other.vy
+
+    # 4. 计算连线方向上的速度分量
+    v_along_line = vx_relative * math.cos(line_direction_rad) + vy_relative * math.sin(line_direction_rad)
+
+    # 5. 计算需要抵消的速度向量
+    vx_to_cancel = v_along_line * math.cos(line_direction_rad)
+    vy_to_cancel = v_along_line * math.sin(line_direction_rad)
+
+    # 6. 计算喷射方向（与需要抵消的速度相同）
+    thrust_direction_rad = math.atan2(vy_to_cancel, vx_to_cancel)
     if len(rtn) < SHANBI_CISHU:
-        rtn += [ang_pen_chui] * (SHANBI_CISHU - len(rtn))
+        rtn += [thrust_direction_rad] * (SHANBI_CISHU - len(rtn))
     print(f"angle rtn={[round(api.r2a(i),3) for i in rtn]}")
     return rtn
 
